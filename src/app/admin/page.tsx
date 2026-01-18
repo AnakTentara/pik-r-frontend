@@ -1,23 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
-import { Trash2, Upload, Lock, ArrowLeft } from 'lucide-react';
-import { API_URL } from '@/lib/config';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Lock, Upload, Trash2, Image as ImageIcon, Plus, X, Check } from 'lucide-react';
+import { api } from '@/lib/api';
 
-export default function Admin() {
+export default function AdminPage() {
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const [newName, setNewName] = useState('');
-    const [newCategory, setNewCategory] = useState('portrait');
-    const [newFile, setNewFile] = useState<File | null>(null);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadName, setUploadName] = useState('');
+    const [uploadCategory, setUploadCategory] = useState('poster');
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -25,13 +30,13 @@ export default function Admin() {
         }
     }, [isAuthenticated]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleLogin = (e: any) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === 'pikr2024') {
             setIsAuthenticated(true);
+            setError('');
         } else {
-            alert('Incorrect password');
+            setError('Wrong password');
         }
     };
 
@@ -40,164 +45,269 @@ export default function Admin() {
         try {
             const res = await api.getTemplates();
             if (res.status === 'success') {
-                setTemplates(res.data);
+                setTemplates(res.data || []);
             }
-        } catch (error) {
-            console.error("Failed to load templates", error);
+        } catch (err) {
+            console.error('Failed to load templates');
         } finally {
             setLoading(false);
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleUpload = async (e: any) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setUploadFile(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => setUploadPreview(ev.target?.result as string);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newFile || !newName) return;
+        if (!uploadFile || !uploadName) return;
 
-        const formData = new FormData();
-        formData.append('name', newName);
-        formData.append('category', newCategory);
-        formData.append('overlay_file', newFile);
-
+        setUploading(true);
         try {
-            await api.uploadTemplate(formData);
-            alert('Upload successful!');
-            setNewName('');
-            setNewFile(null);
-            loadTemplates();
-        } catch (error) {
-            alert('Upload failed');
+            const formData = new FormData();
+            formData.append('name', uploadName);
+            formData.append('category', uploadCategory);
+            formData.append('overlay_file', uploadFile);
+
+            const res = await api.uploadTemplate(formData);
+            if (res.status === 'success') {
+                setShowUploadModal(false);
+                setUploadName('');
+                setUploadCategory('poster');
+                setUploadFile(null);
+                setUploadPreview(null);
+                loadTemplates();
+            }
+        } catch (err) {
+            console.error('Failed to upload');
+        } finally {
+            setUploading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this template?')) return;
+        if (!confirm('Delete this template?')) return;
         try {
             await api.deleteTemplate(id);
             loadTemplates();
-        } catch (error) {
-            alert('Delete failed');
+        } catch (err) {
+            console.error('Failed to delete');
         }
     };
 
+    // Login Screen
     if (!isAuthenticated) {
         return (
-            <div className="h-screen flex items-center justify-center bg-slate-100 flex-col">
-                <button onClick={() => router.push('/')} className="mb-8 flex items-center gap-2 text-slate-500 hover:text-slate-800">
-                    <ArrowLeft size={16} /> Back to Home
-                </button>
-                <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
-                    <div className="flex justify-center mb-4 text-primary">
-                        <Lock size={48} />
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <div className="w-full max-w-sm glass rounded-3xl p-8 animate-scale-in">
+                    <div className="w-16 h-16 mx-auto mb-6 rounded-2xl gradient-bg flex items-center justify-center">
+                        <Lock className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-center mb-6">Admin Access</h2>
-                    <input
-                        type="password"
-                        className="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-primary outline-none"
-                        placeholder="Enter Admin Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
-                        Login
+
+                    <h1 className="text-2xl font-bold text-center mb-2">Admin Access</h1>
+                    <p className="text-slate-400 text-center mb-6 text-sm">Enter password to manage templates</p>
+
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                            autoFocus
+                        />
+
+                        {error && (
+                            <p className="text-red-400 text-sm text-center">{error}</p>
+                        )}
+
+                        <button
+                            type="submit"
+                            className="w-full gradient-bg py-3 rounded-xl font-medium hover-scale"
+                        >
+                            Login
+                        </button>
+                    </form>
+
+                    <button
+                        onClick={() => router.push('/')}
+                        className="w-full mt-4 py-3 rounded-xl glass hover-scale text-sm text-slate-400"
+                    >
+                        Back to Home
                     </button>
-                    <p className="mt-4 text-xs text-center text-slate-400">Password is pikr2024</p>
-                </form>
+                </div>
             </div>
         );
     }
 
+    // Admin Dashboard
     return (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-            <div className="max-w-4xl mx-auto">
-                <header className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-200 rounded-full">
-                            <ArrowLeft size={20} />
-                        </button>
-                        <h1 className="text-3xl font-bold text-slate-800">Template Manager</h1>
-                    </div>
-                    <button onClick={() => setIsAuthenticated(false)} className="text-sm text-slate-500 hover:text-red-500">
-                        Logout
+        <div className="min-h-screen">
+            {/* Header */}
+            <header className="glass border-b border-slate-700/50 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <button
+                        onClick={() => router.push('/')}
+                        className="p-2 rounded-xl hover:bg-slate-700/50 transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
-                </header>
 
-                {/* Upload Section */}
-                <section className="bg-white p-6 rounded-xl shadow-sm mb-8 border border-slate-100">
-                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <Upload size={20} /> Upload New Overlay
-                    </h2>
-                    <form onSubmit={handleUpload} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input
-                                type="text"
-                                placeholder="Template Name"
-                                className="p-3 border rounded-lg w-full"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                required
-                            />
-                            <select
-                                className="p-3 border rounded-lg w-full bg-white"
-                                value={newCategory}
-                                onChange={(e) => setNewCategory(e.target.value)}
-                            >
-                                <option value="portrait">Portrait (4:5)</option>
-                                <option value="story">Story (9:16)</option>
-                                <option value="carousel">Carousel (4:5)</option>
-                            </select>
+                    <h1 className="font-bold">Template Manager</h1>
+
+                    <button
+                        onClick={() => setShowUploadModal(true)}
+                        className="gradient-bg px-4 py-2 rounded-xl flex items-center gap-2 hover-scale text-sm font-medium"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Upload</span>
+                    </button>
+                </div>
+            </header>
+
+            {/* Template Grid */}
+            <main className="max-w-7xl mx-auto px-6 py-8">
+                {loading ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="aspect-[4/5] glass rounded-2xl animate-shimmer" />
+                        ))}
+                    </div>
+                ) : templates.length === 0 ? (
+                    <div className="text-center py-20 glass rounded-3xl animate-fade-in">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full glass-light flex items-center justify-center">
+                            <ImageIcon className="w-10 h-10 text-slate-400" />
                         </div>
-                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition cursor-pointer relative">
-                            <input
-                                type="file"
-                                accept="image/png"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                onChange={(e) => setNewFile(e.target.files ? e.target.files[0] : null)}
-                                required
-                            />
-                            <p className="text-slate-500">
-                                {newFile ? newFile.name : "Click to select PNG file"}
-                            </p>
-                        </div>
-                        <button className="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-bold shadow-md hover:shadow-lg transition">
+                        <h3 className="text-xl font-semibold mb-2">No Templates</h3>
+                        <p className="text-slate-400 mb-6">Upload your first overlay template</p>
+                        <button
+                            onClick={() => setShowUploadModal(true)}
+                            className="gradient-bg px-6 py-3 rounded-xl font-medium hover-scale inline-flex items-center gap-2"
+                        >
+                            <Upload className="w-4 h-4" />
                             Upload Template
                         </button>
-                    </form>
-                </section>
-
-                {/* List Section */}
-                <section>
-                    <h2 className="text-lg font-semibold mb-4 text-slate-700">Existing Templates</h2>
-                    {loading ? (
-                        <p>Loading...</p>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {templates.length === 0 && <p className="text-slate-400 col-span-full">No templates found.</p>}
-                            {templates.map(tpl => (
-                                <div key={tpl.id} className="bg-white rounded-lg shadow-sm overflow-hidden group relative border border-slate-200">
-                                    <div className="aspect-[4/5] bg-slate-100 relative">
-                                        <img
-                                            src={`${API_URL.replace('api.php', '')}${tpl.image_path}`}
-                                            alt={tpl.name}
-                                            className="w-full h-full object-contain p-2"
-                                        />
-                                    </div>
-                                    <div className="p-3">
-                                        <h3 className="font-semibold text-slate-800 truncate">{tpl.name}</h3>
-                                        <p className="text-xs text-slate-500 uppercase">{tpl.category}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => handleDelete(tpl.id)}
-                                        className="absolute top-2 right-2 p-2 bg-white/90 text-red-500 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {templates.map((template, idx) => (
+                            <div
+                                key={template.id}
+                                className="group relative glass rounded-2xl overflow-hidden hover-lift animate-slide-up"
+                                style={{ animationDelay: `${idx * 0.05}s` }}
+                            >
+                                <div className="aspect-[4/5] bg-slate-800/50 relative">
+                                    <img
+                                        src={template.image_path}
+                                        alt={template.name}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
-                            ))}
+
+                                <div className="p-3">
+                                    <h4 className="font-medium truncate">{template.name}</h4>
+                                    <p className="text-xs text-slate-400 capitalize">{template.category}</p>
+                                </div>
+
+                                <button
+                                    onClick={() => handleDelete(template.id)}
+                                    className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </main>
+
+            {/* Upload Modal */}
+            {showUploadModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="glass w-full max-w-md sm:rounded-3xl rounded-t-3xl max-h-[90vh] overflow-y-auto animate-slide-up">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+                            <h2 className="text-xl font-bold">Upload Template</h2>
+                            <button
+                                onClick={() => setShowUploadModal(false)}
+                                className="w-8 h-8 rounded-lg hover:bg-slate-700/50 flex items-center justify-center transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
-                    )}
-                </section>
-            </div>
+
+                        <form onSubmit={handleUpload} className="p-6 space-y-4">
+                            {/* File Upload Area */}
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="aspect-[4/5] rounded-2xl border-2 border-dashed border-slate-600 hover:border-indigo-500 transition-colors cursor-pointer flex flex-col items-center justify-center overflow-hidden"
+                            >
+                                {uploadPreview ? (
+                                    <img src={uploadPreview} alt="Preview" className="w-full h-full object-contain" />
+                                ) : (
+                                    <>
+                                        <Upload className="w-10 h-10 mb-3 text-slate-500" />
+                                        <span className="text-slate-400 text-sm">Click to select image</span>
+                                        <span className="text-slate-500 text-xs mt-1">PNG with transparency</span>
+                                    </>
+                                )}
+                            </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/png"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+
+                            {/* Name Input */}
+                            <input
+                                type="text"
+                                value={uploadName}
+                                onChange={(e) => setUploadName(e.target.value)}
+                                placeholder="Template Name"
+                                required
+                                className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                            />
+
+                            {/* Category Select */}
+                            <select
+                                value={uploadCategory}
+                                onChange={(e) => setUploadCategory(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                            >
+                                <option value="poster">Poster</option>
+                                <option value="carousel">Carousel</option>
+                                <option value="story">Story</option>
+                            </select>
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={!uploadFile || !uploadName || uploading}
+                                className="w-full gradient-bg py-3 rounded-xl font-medium hover-scale disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-5 h-5" />
+                                        Upload Template
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
