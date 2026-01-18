@@ -27,6 +27,17 @@
   }
 }
 
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+
 @keyframes scale-in {
   from {
     opacity: 0;
@@ -65,11 +76,11 @@
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 20px rgba(255, 92, 27, 0.3);
   }
 
   50% {
-    box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 40px rgba(255, 92, 27, 0.6);
   }
 }
 
@@ -115,7 +126,7 @@
   }
 
   ::selection {
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(255, 92, 27, 0.3);
     color: white;
   }
 }
@@ -137,14 +148,14 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #6366F1 0%, #EC4899 100%);
+    background: linear-gradient(135deg, #FF5C1B 0%, #FDC010 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-bg {
-    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
+    background: linear-gradient(135deg, #FF5C1B 0%, #FF8A00 50%, #FDC010 100%);
   }
 
   .text-muted {
@@ -163,6 +174,11 @@
   .animate-slide-up {
     animation: slide-up 0.5s ease-out forwards;
   }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out forwards;
+  }
+
 
   .animate-scale-in {
     animation: scale-in 0.3s ease-out forwards;
@@ -202,7 +218,30 @@
   .hover-scale:active {
     transform: scale(0.98);
   }
+
+  /* Mobile Bottom Sheet */
+  .bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 40;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .swipe-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin: 8px auto;
+  }
 }
+
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -236,5 +275,5 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: #6366F1;
+  border-color: #FF5C1B;
 }

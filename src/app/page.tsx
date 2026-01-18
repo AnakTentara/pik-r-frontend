@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Layers, Settings, Sparkles, ArrowRight, Image, Layout, Film, Trash2, Sun, Moon } from 'lucide-react';
+import { Plus, Layers, Settings, Sparkles, ArrowRight, Image, Layout, Film, Trash2, Sun, Moon, Copy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import { useConfirm } from '@/lib/confirm';
@@ -52,6 +52,16 @@ export default function Home() {
       loadProjects();
     } catch (error) {
       console.error('Failed to delete project');
+    }
+  };
+
+  const handleDuplicate = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      await api.duplicateProject(id);
+      loadProjects();
+    } catch (error) {
+      console.error('Failed to duplicate project');
     }
   };
 
@@ -210,12 +220,22 @@ export default function Home() {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    <button
-                      onClick={(e) => handleDelete(e, project.id)}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => handleDuplicate(e, project.id)}
+                        className="w-8 h-8 rounded-lg bg-indigo-500/80 flex items-center justify-center hover:bg-indigo-500"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4 text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, project.id)}
+                        className="w-8 h-8 rounded-lg bg-red-500/80 flex items-center justify-center hover:bg-red-500"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="p-3">

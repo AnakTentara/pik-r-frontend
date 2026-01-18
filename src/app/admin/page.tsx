@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock, Upload, Trash2, Image as ImageIcon, Plus, X, Check, Key, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Lock, Upload, Trash2, Image as ImageIcon, Plus, X, Check, Key, Sun, Moon, LayoutTemplate, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import { useConfirm } from '@/lib/confirm';
@@ -31,8 +31,10 @@ export default function AdminPage() {
     const [apiKey1, setApiKey1] = useState('');
     const [apiKey2, setApiKey2] = useState('');
     const [apiKey3, setApiKey3] = useState('');
+    const [removeBgKey, setRemoveBgKey] = useState('');
     const [savingKeys, setSavingKeys] = useState(false);
     const [keysSaved, setKeysSaved] = useState(false);
+    const [isKeysLocked, setIsKeysLocked] = useState(true);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +76,7 @@ export default function AdminPage() {
                 setApiKey1(res.data.api_key_1 || '');
                 setApiKey2(res.data.api_key_2 || '');
                 setApiKey3(res.data.api_key_3 || '');
+                setRemoveBgKey(res.data.remove_bg_key || '');
             }
         } catch (err) {
             console.error('Failed to load settings');
@@ -86,7 +89,8 @@ export default function AdminPage() {
             await api.saveSettings({
                 api_key_1: apiKey1,
                 api_key_2: apiKey2,
-                api_key_3: apiKey3
+                api_key_3: apiKey3,
+                remove_bg_key: removeBgKey
             });
             setKeysSaved(true);
             setTimeout(() => setKeysSaved(false), 2000);
@@ -153,7 +157,6 @@ export default function AdminPage() {
         }
     };
 
-    // Login Screen
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
@@ -198,10 +201,8 @@ export default function AdminPage() {
         );
     }
 
-    // Admin Dashboard
     return (
         <div className="min-h-screen">
-            {/* Header */}
             <header className="glass border-b border-slate-700/50 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <button
@@ -233,107 +234,37 @@ export default function AdminPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-                {/* API Keys Section */}
                 <section className="glass rounded-2xl p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
-                            <Key className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold">Gemini API Keys</h2>
-                            <p className="text-xs text-muted">Add up to 3 keys for rotation</p>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                                <LayoutTemplate className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-lg">Templates Grid</h2>
+                                <p className="text-xs text-muted">Manage overlay templates</p>
+                            </div>
                         </div>
                     </div>
-
-                    <div className="grid gap-3 mb-4">
-                        <input
-                            type="password"
-                            value={apiKey1}
-                            onChange={(e) => setApiKey1(e.target.value)}
-                            placeholder="API Key 1 (Primary)"
-                            className="w-full px-4 py-3 rounded-xl bg-surface border border-slate-700 focus:border-indigo-500 outline-none transition-all"
-                        />
-                        <input
-                            type="password"
-                            value={apiKey2}
-                            onChange={(e) => setApiKey2(e.target.value)}
-                            placeholder="API Key 2 (Backup)"
-                            className="w-full px-4 py-3 rounded-xl bg-surface border border-slate-700 focus:border-indigo-500 outline-none transition-all"
-                        />
-                        <input
-                            type="password"
-                            value={apiKey3}
-                            onChange={(e) => setApiKey3(e.target.value)}
-                            placeholder="API Key 3 (Backup)"
-                            className="w-full px-4 py-3 rounded-xl bg-surface border border-slate-700 focus:border-indigo-500 outline-none transition-all"
-                        />
-                    </div>
-
-                    <button
-                        onClick={saveApiKeys}
-                        disabled={savingKeys}
-                        className="gradient-bg px-6 py-2 rounded-xl font-medium hover-scale text-white flex items-center gap-2"
-                    >
-                        {savingKeys ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : keysSaved ? (
-                            <Check className="w-4 h-4" />
-                        ) : (
-                            <Key className="w-4 h-4" />
-                        )}
-                        {keysSaved ? 'Saved!' : 'Save Keys'}
-                    </button>
-                </section>
-
-                {/* Template Grid */}
-                <section>
-                    <h2 className="text-xl font-bold mb-4">Templates</h2>
 
                     {loading ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {[1, 2, 3, 4].map((i) => (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {[1, 2, 3, 4, 5].map((i) => (
                                 <div key={i} className="aspect-[4/5] glass rounded-2xl animate-shimmer" />
                             ))}
                         </div>
-                    ) : templates.length === 0 ? (
-                        <div className="text-center py-20 glass rounded-3xl animate-fade-in">
-                            <div className="w-20 h-20 mx-auto mb-6 rounded-full glass-light flex items-center justify-center">
-                                <ImageIcon className="w-10 h-10 text-muted" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">No Templates</h3>
-                            <p className="text-muted mb-6">Upload your first overlay template</p>
-                            <button
-                                onClick={() => setShowUploadModal(true)}
-                                className="gradient-bg px-6 py-3 rounded-xl font-medium hover-scale inline-flex items-center gap-2 text-white"
-                            >
-                                <Upload className="w-4 h-4" />
-                                Upload Template
-                            </button>
-                        </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {templates.map((template, idx) => (
-                                <div
-                                    key={template.id}
-                                    className="group relative glass rounded-2xl overflow-hidden hover-lift animate-slide-up"
-                                    style={{ animationDelay: `${idx * 0.05}s` }}
-                                >
-                                    <div className="aspect-[4/5] bg-surface relative">
-                                        <img
-                                            src={template.image_path}
-                                            alt={template.name}
-                                            className="w-full h-full object-contain"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%231e293b" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%2364748b" font-size="10">No Image</text></svg>';
-                                            }}
-                                        />
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {templates.map((template) => (
+                                <div key={template.id} className="group relative aspect-[4/5] glass rounded-2xl overflow-hidden hover-lift">
+                                    <img
+                                        src={template.image_path}
+                                        alt={template.name}
+                                        className="w-full h-full object-contain bg-slate-800/50"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                        <div className="text-white text-xs font-medium truncate w-full">{template.name}</div>
                                     </div>
-
-                                    <div className="p-3">
-                                        <h4 className="font-medium truncate">{template.name}</h4>
-                                        <p className="text-xs text-muted capitalize">{template.category}</p>
-                                    </div>
-
                                     <button
                                         onClick={() => handleDelete(template.id)}
                                         className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
@@ -345,9 +276,88 @@ export default function AdminPage() {
                         </div>
                     )}
                 </section>
+
+                <section className="glass rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                                <Key className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="font-bold">API Keys</h2>
+                                <p className="text-xs text-muted">Manage external service keys</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setIsKeysLocked(!isKeysLocked)}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${isKeysLocked ? 'glass-light text-muted' : 'bg-indigo-500/20 text-indigo-400'
+                                }`}
+                        >
+                            {isKeysLocked ? <Lock className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                            {isKeysLocked ? 'Unlock to Edit' : 'Cancel Editing'}
+                        </button>
+                    </div>
+
+                    <div className="grid gap-3 mb-4">
+                        {[
+                            { value: apiKey1, setter: setApiKey1, label: 'Gemini Key 1' },
+                            { value: apiKey2, setter: setApiKey2, label: 'Gemini Key 2' },
+                            { value: apiKey3, setter: setApiKey3, label: 'Gemini Key 3' },
+                        ].map((key, i) => (
+                            <div key={i} className="relative">
+                                <input
+                                    type="password"
+                                    value={key.value}
+                                    onChange={(e) => key.setter(e.target.value)}
+                                    placeholder={key.label}
+                                    readOnly={isKeysLocked}
+                                    className={`w-full px-4 py-3 rounded-xl bg-surface border outline-none transition-all ${isKeysLocked ? 'border-slate-800/50 opacity-60' : 'border-slate-700 focus:border-indigo-500'
+                                        }`}
+                                />
+                                {isKeysLocked && <div className="absolute inset-0 z-10" />}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-pink-400" />
+                            Remove.bg API Key
+                        </h3>
+                        <div className="relative">
+                            <input
+                                type="password"
+                                value={removeBgKey}
+                                onChange={(e) => setRemoveBgKey(e.target.value)}
+                                placeholder="Remove.bg API Key"
+                                readOnly={isKeysLocked}
+                                className={`w-full px-4 py-3 rounded-xl bg-surface border outline-none transition-all ${isKeysLocked ? 'border-slate-800/50 opacity-60' : 'border-slate-700 focus:border-pink-500'
+                                    }`}
+                            />
+                            {isKeysLocked && <div className="absolute inset-0 z-10" />}
+                        </div>
+                    </div>
+
+                    {!isKeysLocked && (
+                        <button
+                            onClick={saveApiKeys}
+                            disabled={savingKeys}
+                            className="mt-6 gradient-bg px-6 py-2 rounded-xl font-medium hover-scale text-white flex items-center gap-2"
+                        >
+                            {savingKeys ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : keysSaved ? (
+                                <Check className="w-4 h-4" />
+                            ) : (
+                                <Key className="w-4 h-4" />
+                            )}
+                            {keysSaved ? 'Saved!' : 'Save Keys'}
+                        </button>
+                    )}
+                </section>
             </main>
 
-            {/* Upload Modal */}
             {showUploadModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
                     <div className="glass w-full max-w-md sm:rounded-3xl rounded-t-3xl max-h-[90vh] overflow-y-auto animate-slide-up">

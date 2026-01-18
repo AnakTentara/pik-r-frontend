@@ -12,6 +12,7 @@ export default function ExportPage() {
     const router = useRouter();
     const { theme, toggleTheme } = useTheme();
     const [imageData, setImageData] = useState<string | null>(null);
+    const [projectName, setProjectName] = useState('pikr-content');
     const [caption, setCaption] = useState('');
     const [topic, setTopic] = useState('');
     const [tone, setTone] = useState('informative');
@@ -21,9 +22,9 @@ export default function ExportPage() {
 
     useEffect(() => {
         const data = localStorage.getItem('temp_export_image');
-        if (data) {
-            setImageData(data);
-        }
+        const name = localStorage.getItem('temp_export_name');
+        if (data) setImageData(data);
+        if (name) setProjectName(name);
     }, []);
 
     const handleGenerate = async () => {
@@ -58,7 +59,8 @@ export default function ExportPage() {
     const handleDownload = () => {
         if (!imageData) return;
         const link = document.createElement('a');
-        link.download = `pikr-content-${Date.now()}.png`;
+        const safeName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `${safeName}.png`;
         link.href = imageData;
         link.click();
     };

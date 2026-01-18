@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, Image as ImageIcon, Type, Layers, Download, LayoutTemplate, X, Trash2, Save, Check, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Plus, Image as ImageIcon, Type, Layers, Download, LayoutTemplate, X, Trash2, Save, Check, Sun, Moon, Sparkles, MessageSquare, Send } from 'lucide-react';
 import * as fabric from 'fabric';
 import { api } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
@@ -26,6 +26,11 @@ export default function EditorPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [showComments, setShowComments] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [comments, setComments] = useState<any[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [postingComment, setPostingComment] = useState(false);
 
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,7 +47,35 @@ export default function EditorPage() {
     useEffect(() => {
         loadProject();
         loadTemplates();
+        fetchComments();
     }, [projectId]);
+
+    const fetchComments = async () => {
+        try {
+            const res = await api.getComments(projectId);
+            if (res.status === 'success') {
+                setComments(res.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch comments');
+        }
+    };
+
+    const handleAddComment = async () => {
+        if (!newComment.trim()) return;
+        setPostingComment(true);
+        try {
+            const res = await api.addComment(projectId, { text: newComment });
+            if (res.status === 'success') {
+                setComments([res.data, ...comments]);
+                setNewComment('');
+            }
+        } catch (error) {
+            console.error('Failed to post comment');
+        } finally {
+            setPostingComment(false);
+        }
+    };
 
     const loadProject = async () => {
         try {
@@ -104,6 +137,23 @@ export default function EditorPage() {
         fabricCanvas.on('object:modified', () => triggerAutoSave(fabricCanvas));
         fabricCanvas.on('object:added', () => triggerAutoSave(fabricCanvas));
         fabricCanvas.on('object:removed', () => triggerAutoSave(fabricCanvas));
+
+        // Double-tap support for text editing
+        let lastTap = 0;
+        fabricCanvas.on('mouse:down', (options) => {
+            const now = Date.now();
+            const tapDelay = now - lastTap;
+            lastTap = now;
+
+            if (tapDelay < 300 && options.target) {
+                const target: any = options.target;
+                if (target.type === 'i-text' || target.type === 'textbox' || target.enterEditing) {
+                    target.enterEditing();
+                    fabricCanvas.setActiveObject(target);
+                    fabricCanvas.renderAll();
+                }
+            }
+        });
 
         // Load existing content
         loadCanvasContent(fabricCanvas);
@@ -259,10 +309,45 @@ export default function EditorPage() {
         }
     };
 
+    const handleRemoveBackground = async () => {
+        if (!canvas) return;
+        const active: any = canvas.getActiveObject();
+        if (!active || !(active instanceof fabric.FabricImage)) return;
+
+        setSaving(true); // Reuse saving state as "background processing"
+        try {
+            const dataURL = active.toDataURL({ quality: 1 });
+            const res = await api.removeBackground(dataURL);
+
+            if (res.status === 'success' && res.data.image) {
+                const img = await fabric.FabricImage.fromURL(res.data.image);
+                if (img) {
+                    img.set({
+                        left: active.left,
+                        top: active.top,
+                        scaleX: active.scaleX,
+                        scaleY: active.scaleY,
+                        angle: active.angle
+                    });
+                    canvas.remove(active);
+                    canvas.add(img);
+                    canvas.setActiveObject(img);
+                    canvas.requestRenderAll();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to remove background', error);
+            alert('Failed to remove background. Check API key.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleExport = () => {
         if (!canvas) return;
         const dataURL = canvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
         localStorage.setItem('temp_export_image', dataURL);
+        localStorage.setItem('temp_export_name', projectName);
         router.push('/export');
     };
 
@@ -322,6 +407,17 @@ export default function EditorPage() {
                     </div>
 
                     <button
+                        onClick={() => setShowComments(true)}
+                        className="p-2 rounded-xl hover:bg-slate-700/50 transition-colors relative"
+                        title="Comments"
+                    >
+                        <MessageSquare className="w-5 h-5" />
+                        {comments.length > 0 && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full" />
+                        )}
+                    </button>
+
+                    <button
                         onClick={handleManualSave}
                         className="p-2 rounded-xl hover:bg-slate-700/50 transition-colors"
                         title="Save"
@@ -353,6 +449,38 @@ export default function EditorPage() {
             >
                 <div className="relative shadow-2xl rounded-2xl overflow-hidden animate-scale-in">
                     <canvas ref={canvasRef} />
+
+                    {/* Object Context Actions (Mobile Bottom Sheet / Desktop Toolbar) */}
+                    {hasSelection && (
+                        <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:top-1/2 sm:-translate-y-1/2 sm:right-4 sm:left-auto sm:w-auto z-40 sm:z-20 pointer-events-none">
+                            <div className="bottom-sheet sm:static sm:bg-transparent sm:border-none sm:shadow-none sm:p-0 pointer-events-auto">
+                                <div className="sm:hidden swipe-handle" />
+                                <div className="flex items-center justify-around p-4 sm:flex-col sm:glass sm:rounded-2xl sm:p-2 sm:gap-2 sm:shadow-2xl">
+                                    {(canvas?.getActiveObject() as any) instanceof fabric.FabricImage && (
+                                        <button
+                                            onClick={handleRemoveBackground}
+                                            className="flex flex-col sm:flex-row items-center gap-1 sm:px-3 sm:py-2 rounded-xl hover:bg-slate-700/30 text-indigo-400 transition-colors"
+                                        >
+                                            <div className="w-12 h-12 sm:w-8 sm:h-8 glass-light rounded-2xl flex items-center justify-center sm:bg-transparent">
+                                                <Sparkles className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-[10px] sm:text-xs font-medium">Remove BG</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={deleteSelected}
+                                        className="flex flex-col sm:flex-row items-center gap-1 sm:px-3 sm:py-2 rounded-xl hover:bg-red-500/10 text-red-400 transition-colors"
+                                    >
+                                        <div className="w-12 h-12 sm:w-8 sm:h-8 glass-light rounded-2xl flex items-center justify-center sm:bg-transparent">
+                                            <Trash2 className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[10px] sm:text-xs font-medium">Delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
 
@@ -448,6 +576,66 @@ export default function EditorPage() {
                     </div>
                 </div>
             )}
+
+            {/* Comments Drawer */}
+            {showComments && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowComments(false)} />
+                    <div className="relative w-full max-w-md bg-surface border-l border-slate-700/50 flex flex-col animate-slide-in-right shadow-2xl">
+                        <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+                            <div className="flex items-center gap-2 font-bold">
+                                <MessageSquare className="w-5 h-5 text-indigo-400" />
+                                Team Comments
+                            </div>
+                            <button onClick={() => setShowComments(false)} className="p-2 hover:bg-slate-700/50 rounded-xl transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {comments.length === 0 ? (
+                                <div className="text-center py-12 text-slate-500">
+                                    <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                    <p>No comments yet. Start the conversation!</p>
+                                </div>
+                            ) : (
+                                comments.map((comment: any) => (
+                                    <div key={comment.id} className="glass p-3 rounded-2xl">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs font-bold text-indigo-400">{comment.author}</span>
+                                            <span className="text-[10px] text-slate-500">
+                                                {new Date(comment.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm">{comment.text}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t border-slate-700/50 bg-slate-900/50">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+                                    placeholder="Add a comment..."
+                                    className="flex-1 px-4 py-2 rounded-xl bg-slate-800 border-none outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button
+                                    onClick={handleAddComment}
+                                    disabled={postingComment || !newComment.trim()}
+                                    className="p-3 gradient-bg rounded-xl hover-scale disabled:opacity-50 text-white"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+

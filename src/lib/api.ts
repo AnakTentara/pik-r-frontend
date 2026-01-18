@@ -24,6 +24,9 @@ export const api = {
     getProject: (id: string | number) => handleResponse(axios.get(`${API_BASE}/projects/${id}`)),
     updateProject: (id: string | number, data: any) => handleResponse(axios.put(`${API_BASE}/projects/${id}`, data)),
     deleteProject: (id: string | number) => handleResponse(axios.delete(`${API_BASE}/projects/${id}`)),
+    duplicateProject: (id: string | number) => handleResponse(axios.post(`${API_BASE}/projects/duplicate`, { id })),
+    getComments: (projectId: string | number) => handleResponse(axios.get(`${API_BASE}/projects/${projectId}/comments`)),
+    addComment: (projectId: string | number, data: { author?: string; text: string }) => handleResponse(axios.post(`${API_BASE}/projects/${projectId}/comments`, data)),
 
     // Settings
     getSettings: () => handleResponse(axios.get(`${API_BASE}/settings`)),
@@ -31,4 +34,5 @@ export const api = {
 
     // AI Generation
     generateCaption: (topic: string, tone: string) => handleResponse(axios.post(`${API_BASE}/generate`, { topic, tone })),
+    removeBackground: (image: string) => handleResponse(axios.post(`${API_BASE}/remove-bg`, { image })),
 };

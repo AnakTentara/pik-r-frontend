@@ -12,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<Theme>('dark');
+    const [theme, setTheme] = useState<Theme>('light');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -47,7 +47,7 @@ export function useTheme() {
     if (!context) {
         // Return default values if used outside provider (during SSR)
         return {
-            theme: 'dark' as Theme,
+            theme: 'light' as Theme,
             toggleTheme: () => { }
         };
     }
