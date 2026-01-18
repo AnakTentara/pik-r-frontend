@@ -5,10 +5,14 @@ import { existsSync } from 'fs';
 import path from 'path';
 import logger from '@/lib/logger';
 
+// Use a persistent uploads directory outside of public (won't be deleted on rebuild)
+const uploadsDir = path.join(process.cwd(), 'uploads');
+
 // Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'public/uploads');
-if (!existsSync(uploadsDir)) {
-    mkdir(uploadsDir, { recursive: true }).catch(console.error);
+async function ensureUploadsDir() {
+    if (!existsSync(uploadsDir)) {
+        await mkdir(uploadsDir, { recursive: true });
+    }
 }
 
 // GET /api/templates - List all templates
@@ -28,6 +32,8 @@ export async function GET() {
 export async function POST(request: Request) {
     logger.api('POST', '/api/templates');
     try {
+        await ensureUploadsDir();
+
         const formData = await request.formData();
         const name = formData.get('name') as string;
         const category = formData.get('category') as string;
@@ -39,13 +45,22 @@ export async function POST(request: Request) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+
+        // Sanitize filename: remove brackets and special chars
+        const ext = path.extname(file.name);
+        const baseName = path.basename(file.name, ext)
+            .replace(/[\[\](){}]/g, '')  // Remove brackets
+            .replace(/[^a-zA-Z0-9_-]/g, '_')  // Replace other special chars with underscore
+            .replace(/_+/g, '_');  // Collapse multiple underscores
+
+        const filename = `${Date.now()}_${baseName}${ext}`;
         const uploadPath = path.join(uploadsDir, filename);
 
         await writeFile(uploadPath, buffer);
         logger.info('File uploaded', { filename, size: buffer.length });
 
-        const imagePath = `/uploads/${filename}`;
+        // Store path that will be served via API
+        const imagePath = `/api/uploads/${filename}`;
 
         const info = db.prepare(
             'INSERT INTO templates (name, category, image_path) VALUES (?, ?, ?)'
@@ -74,7 +89,9 @@ export async function DELETE(request: Request) {
 
         const template: any = db.prepare('SELECT image_path FROM templates WHERE id = ?').get(id);
         if (template) {
-            const filePath = path.join(process.cwd(), 'public', template.image_path);
+            // Extract filename from path like /api/uploads/filename.png
+            const filename = template.image_path.split('/').pop();
+            const filePath = path.join(uploadsDir, filename);
             try {
                 await unlink(filePath);
                 logger.info('Template file deleted', { path: filePath });
