@@ -2,11 +2,6 @@
 
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
-  --color-primary: #6366F1;
-  --color-secondary: #EC4899;
-  --color-bg: #0F172A;
-  --color-surface: #1E293B;
-  --color-glass: rgba(255, 255, 255, 0.05);
 }
 
 /* Custom Animations */
@@ -78,18 +73,45 @@
   }
 }
 
+/* CSS Variables for theming */
+:root {
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-glass: rgba(30, 41, 59, 0.7);
+  --bg-glass-light: rgba(255, 255, 255, 0.05);
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root.light {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass-light: rgba(0, 0, 0, 0.03);
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
 /* Base Styles */
 @layer base {
   html {
     scroll-behavior: smooth;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   body {
     font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark body {
     background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
     background-attachment: fixed;
-    color: #E2E8F0;
-    min-height: 100vh;
   }
 
   ::selection {
@@ -101,15 +123,17 @@
 /* Utility Classes */
 @layer utilities {
   .glass {
-    background: rgba(30, 41, 59, 0.7);
+    background: var(--bg-glass);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
   .glass-light {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-glass-light);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
   }
 
   .gradient-text {
@@ -123,23 +147,13 @@
     background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
   }
 
-  .gradient-border {
-    position: relative;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.2));
-    border-radius: 12px;
+  .text-muted {
+    color: var(--text-secondary);
   }
 
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    padding: 1px;
-    background: linear-gradient(135deg, #6366F1, #EC4899);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+  .bg-surface {
+    background: var(--bg-secondary);
+    transition: background-color 0.3s ease;
   }
 
   .animate-fade-in {
@@ -159,7 +173,7 @@
   }
 
   .animate-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, var(--bg-glass-light), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
@@ -174,7 +188,7 @@
 
   .hover-lift:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   }
 
   .hover-scale {
@@ -197,7 +211,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -207,4 +221,20 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(99, 102, 241, 0.8);
+}
+
+/* Input styling for both themes */
+input,
+select,
+textarea {
+  background: var(--bg-glass-light);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #6366F1;
 }

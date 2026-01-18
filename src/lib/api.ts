@@ -24,4 +24,11 @@ export const api = {
     getProject: (id: string | number) => handleResponse(axios.get(`${API_BASE}/projects/${id}`)),
     updateProject: (id: string | number, data: any) => handleResponse(axios.put(`${API_BASE}/projects/${id}`, data)),
     deleteProject: (id: string | number) => handleResponse(axios.delete(`${API_BASE}/projects/${id}`)),
+
+    // Settings
+    getSettings: () => handleResponse(axios.get(`${API_BASE}/settings`)),
+    saveSettings: (data: Record<string, string>) => handleResponse(axios.post(`${API_BASE}/settings`, data)),
+
+    // AI Generation
+    generateCaption: (topic: string, tone: string) => handleResponse(axios.post(`${API_BASE}/generate`, { topic, tone })),
 };

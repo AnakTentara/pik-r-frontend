@@ -4,7 +4,7 @@ import path from 'path';
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 const db = new Database(dbPath);
 
-// Initialize database schema with thumbnail column
+// Initialize database schema
 db.exec(`
   CREATE TABLE IF NOT EXISTS templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,13 +23,14 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
-// Add thumbnail column if it doesn't exist (migration)
-try {
-  db.exec('ALTER TABLE projects ADD COLUMN thumbnail TEXT');
-} catch (e) {
-  // Column already exists, ignore
-}
+// Migrations
+try { db.exec('ALTER TABLE projects ADD COLUMN thumbnail TEXT'); } catch (e) { }
 
 export default db;

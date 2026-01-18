@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, Image as ImageIcon, Type, Layers, Download, LayoutTemplate, X, Trash2, Save, Check, Undo, Redo } from 'lucide-react';
+import { ArrowLeft, Plus, Image as ImageIcon, Type, Layers, Download, LayoutTemplate, X, Trash2, Save, Check, Sun, Moon } from 'lucide-react';
 import * as fabric from 'fabric';
 import { api } from '@/lib/api';
+import { useTheme } from '@/lib/theme';
 
 export default function EditorPage() {
     const router = useRouter();

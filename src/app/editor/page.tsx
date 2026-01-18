@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Image, Layout, Film, X } from 'lucide-react';
@@ -80,8 +82,8 @@ export default function NewEditorPage() {
                                             key={type.id}
                                             onClick={() => setProjectType(type.id)}
                                             className={`p-4 rounded-xl border-2 transition-all text-center ${projectType === type.id
-                                                    ? 'border-indigo-500 bg-indigo-500/20'
-                                                    : 'border-slate-700 glass-light hover:border-slate-600'
+                                                ? 'border-indigo-500 bg-indigo-500/20'
+                                                : 'border-slate-700 glass-light hover:border-slate-600'
                                                 }`}
                                         >
                                             <Icon className={`w-6 h-6 mx-auto mb-2 ${projectType === type.id ? 'text-indigo-400' : 'text-slate-400'}`} />

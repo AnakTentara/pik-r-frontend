@@ -1,12 +1,16 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Layers, Settings, Sparkles, ArrowRight, Image, Layout, Film, Trash2 } from 'lucide-react';
+import { Plus, Layers, Settings, Sparkles, ArrowRight, Image, Layout, Film, Trash2, Sun, Moon } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useTheme } from '@/lib/theme';
 
 export default function Home() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +56,8 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <header className="relative overflow-hidden">
-        {/* Background Glow */}
-        <div className="absolute inset-0 overflow-hidden">
+        {/* Background Glow (dark mode only) */}
+        <div className="absolute inset-0 overflow-hidden dark:block hidden">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-float" />
           <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
         </div>
@@ -65,21 +69,30 @@ export default function Home() {
             </div>
             <div>
               <span className="text-xl font-bold block leading-tight">PIK-R Creator</span>
-              <span className="text-xs text-slate-400">Medinfo Content Tool</span>
+              <span className="text-xs text-muted">Medinfo Content Tool</span>
             </div>
           </div>
 
-          <button
-            onClick={() => router.push('/admin')}
-            className="glass px-4 py-2 rounded-xl flex items-center gap-2 hover-scale text-sm font-medium"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Admin</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="glass p-2 rounded-xl hover-scale"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => router.push('/admin')}
+              className="glass px-4 py-2 rounded-xl flex items-center gap-2 hover-scale text-sm font-medium"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+          </div>
         </nav>
 
         <div className="relative z-10 text-center py-12 px-6 animate-fade-in">
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6 text-sm text-slate-300">
+          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6 text-sm text-muted">
             <Sparkles className="w-4 h-4 text-indigo-400" />
             AI-Powered Content Creation
           </div>
@@ -87,13 +100,13 @@ export default function Home() {
           <h1 className="text-4xl sm:text-5xl font-bold mb-4">
             Create <span className="gradient-text">Stunning</span> Content
           </h1>
-          <p className="text-slate-400 max-w-lg mx-auto mb-8">
+          <p className="text-muted max-w-lg mx-auto mb-8">
             Design posters, carousels, and stories with professional templates and AI captions for PIK-R Medinfo.
           </p>
 
           <button
             onClick={() => router.push('/editor')}
-            className="gradient-bg px-8 py-4 rounded-2xl font-bold text-lg hover-scale inline-flex items-center gap-3 animate-pulse-glow"
+            className="gradient-bg px-8 py-4 rounded-2xl font-bold text-lg hover-scale inline-flex items-center gap-3 animate-pulse-glow text-white"
           >
             Start Creating
             <ArrowRight className="w-5 h-5" />
@@ -151,10 +164,10 @@ export default function Home() {
               <Layers className="w-10 h-10 text-white" />
             </div>
             <h3 className="text-xl font-semibold mb-2">No Projects Yet</h3>
-            <p className="text-slate-400 mb-6">Create your first content now!</p>
+            <p className="text-muted mb-6">Create your first content now!</p>
             <button
               onClick={() => router.push('/editor')}
-              className="gradient-bg px-6 py-3 rounded-xl font-medium hover-scale inline-flex items-center gap-2"
+              className="gradient-bg px-6 py-3 rounded-xl font-medium hover-scale inline-flex items-center gap-2 text-white"
             >
               <Plus className="w-4 h-4" />
               Create Project
@@ -171,7 +184,7 @@ export default function Home() {
                   style={{ animationDelay: `${idx * 0.05}s` }}
                   onClick={() => router.push(`/editor/${project.id}`)}
                 >
-                  <div className="aspect-[4/5] bg-slate-800/50 relative">
+                  <div className="aspect-[4/5] bg-surface relative">
                     {project.thumbnail ? (
                       <img
                         src={project.thumbnail}
@@ -180,25 +193,23 @@ export default function Home() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <TypeIcon className="w-12 h-12 text-slate-600" />
+                        <TypeIcon className="w-12 h-12 text-muted" />
                       </div>
                     )}
 
-                    {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    {/* Delete button */}
                     <button
                       onClick={(e) => handleDelete(e, project.id)}
                       className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-red-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 text-white" />
                     </button>
                   </div>
 
                   <div className="p-3">
                     <div className="font-medium truncate">{project.name}</div>
-                    <div className="text-xs text-slate-400 capitalize flex items-center gap-1">
+                    <div className="text-xs text-muted capitalize flex items-center gap-1">
                       <TypeIcon className="w-3 h-3" />
                       {project.type}
                     </div>
@@ -215,7 +226,7 @@ export default function Home() {
         onClick={() => router.push('/editor')}
         className="fixed bottom-6 right-6 w-16 h-16 gradient-bg rounded-full flex items-center justify-center shadow-2xl hover-scale animate-pulse-glow sm:hidden z-50"
       >
-        <Plus className="w-7 h-7" />
+        <Plus className="w-7 h-7 text-white" />
       </button>
     </div>
   );
