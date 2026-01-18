@@ -57,7 +57,7 @@ const Editor = () => {
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const active = fabricCanvas.getActiveObject();
-                if (active && !active.isLocked) {
+                if (active) {
                     fabricCanvas.remove(active);
                 }
             }
@@ -92,12 +92,12 @@ const Editor = () => {
             const imgObj = new Image();
             imgObj.src = f.target?.result as string;
             imgObj.onload = () => {
-                const imgInstance = new fabric.Image(imgObj);
+                const imgInstance = new fabric.FabricImage(imgObj);
                 if (imgInstance.width! > canvas.getWidth()) {
                     imgInstance.scaleToWidth(canvas.getWidth() * 0.8);
                 }
                 canvas.add(imgInstance);
-                canvas.sendToBack(imgInstance);
+                canvas.sendObjectToBack(imgInstance);
                 canvas.setActiveObject(imgInstance);
                 canvas.renderAll();
             };
@@ -107,25 +107,39 @@ const Editor = () => {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const applyTemplate = (template: any) => {
+    const applyTemplate = async (template: any) => {
         if (!canvas) return;
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const baseUrl = API_URL.replace('api.php', '');
         const imageUrl = `${baseUrl}${template.image_path}`;
 
-        fabric.Image.fromURL(imageUrl, (img: fabric.Image) => {
+        try {
+            const img = await fabric.FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
             if (!img) return;
 
-            img.scaleToWidth(canvas.getWidth());
+            // Scale to fit canvas width
+            const scale = canvas.getWidth() / img.width;
+            img.scale(scale);
 
-            canvas.setOverlayImage(img, canvas.renderAll.bind(canvas), {
-                scaleX: canvas.getWidth() / img.width!,
-                scaleY: canvas.getHeight() / img.height!
+            // Center the overlay
+            img.set({
+                left: 0,
+                top: 0,
+                originX: 'left',
+                originY: 'top',
+                evented: false, // Make overlay unclickable so we can select objects behind it
+                selectable: false
             });
 
+            // In Fabric v6, use overlayImage property
+            canvas.overlayImage = img;
+            canvas.requestRenderAll();
+
             setShowTemplateModal(false);
-        }, { crossOrigin: 'anonymous' });
+        } catch (error) {
+            console.error("Failed to load template", error);
+        }
     };
 
     const handleExport = () => {

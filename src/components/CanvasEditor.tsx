@@ -42,8 +42,7 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({ activeSlide, onCanvasReady 
                 const scale = newWidth / canvas.getWidth();
                 const newHeight = newWidth / ratio;
 
-                canvas.setWidth(newWidth);
-                canvas.setHeight(newHeight);
+                canvas.setDimensions({ width: newWidth, height: newHeight });
                 canvas.setZoom(canvas.getZoom() * scale);
                 canvas.renderAll();
             }
