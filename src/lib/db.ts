@@ -1,11 +1,10 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import fs from 'fs';
 
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 const db = new Database(dbPath);
 
-// Initialize database schema
+// Initialize database schema with thumbnail column
 db.exec(`
   CREATE TABLE IF NOT EXISTS templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,9 +19,17 @@ db.exec(`
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     content TEXT NOT NULL,
+    thumbnail TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// Add thumbnail column if it doesn't exist (migration)
+try {
+  db.exec('ALTER TABLE projects ADD COLUMN thumbnail TEXT');
+} catch (e) {
+  // Column already exists, ignore
+}
 
 export default db;

@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Local API routes in Next.js
 const API_BASE = '/api';
 
 const handleResponse = async (request: Promise<any>) => {
@@ -16,13 +15,13 @@ const handleResponse = async (request: Promise<any>) => {
 export const api = {
     // Templates
     getTemplates: () => handleResponse(axios.get(`${API_BASE}/templates`)),
-
     uploadTemplate: (formData: FormData) => handleResponse(axios.post(`${API_BASE}/templates`, formData)),
-
     deleteTemplate: (id: number) => handleResponse(axios.delete(`${API_BASE}/templates`, { data: { id } })),
 
     // Projects
     getProjects: () => handleResponse(axios.get(`${API_BASE}/projects`)),
-
-    saveProject: (data: any) => handleResponse(axios.post(`${API_BASE}/projects`, data)),
+    createProject: (data: { name: string; type: string }) => handleResponse(axios.post(`${API_BASE}/projects`, data)),
+    getProject: (id: string | number) => handleResponse(axios.get(`${API_BASE}/projects/${id}`)),
+    updateProject: (id: string | number, data: any) => handleResponse(axios.put(`${API_BASE}/projects/${id}`, data)),
+    deleteProject: (id: string | number) => handleResponse(axios.delete(`${API_BASE}/projects/${id}`)),
 };
