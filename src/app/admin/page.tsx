@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Lock, Upload, Trash2, Image as ImageIcon, Plus, X, Check, Key, Sun, Moon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
+import { useConfirm } from '@/lib/confirm';
 
 export default function AdminPage() {
     const router = useRouter();
     const { theme, toggleTheme } = useTheme();
+    const { confirm } = useConfirm();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -133,7 +135,16 @@ export default function AdminPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Delete this template?')) return;
+        const confirmed = await confirm({
+            title: 'Delete Template',
+            message: 'Are you sure you want to delete this template? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            danger: true
+        });
+
+        if (!confirmed) return;
+
         try {
             await api.deleteTemplate(id);
             loadTemplates();

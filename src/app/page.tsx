@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 import { Plus, Layers, Settings, Sparkles, ArrowRight, Image, Layout, Film, Trash2, Sun, Moon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
+import { useConfirm } from '@/lib/confirm';
 
 export default function Home() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { confirm } = useConfirm();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,16 @@ export default function Home() {
 
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
-    if (!confirm('Delete this project?')) return;
+
+    const confirmed = await confirm({
+      title: 'Delete Project',
+      message: 'Are you sure you want to delete this project? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      danger: true
+    });
+
+    if (!confirmed) return;
 
     try {
       await api.deleteProject(id);
